@@ -1,2 +1,2 @@
-# Mastering-Julia-1.0
-Mastering Julia 1.0 by Packt Publishing
+# Mastering-Julia-1.+
+Mastering Julia 1.+ by Packt Publishing
