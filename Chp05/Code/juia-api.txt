@@ -1,0 +1,155 @@
+
+http://github.com/julialang/julia
+
+https://docs.julialang.org/en/v1/manual/embedding/#High-Level-Embedding-1
+
+int main(int argc, char *argv[])
+{
+    /* required: setup the Julia context */
+    jl_init();
+
+    /* run Julia commands */
+    jl_eval_string("print(sqrt(2.0))");
+
+    /* strongly recommended: notify Julia that the
+         program is about to terminate. this allows
+         Julia time to cleanup pending write requests
+         and run all finalizers
+    */
+    jl_atexit_hook(0);
+    return 0;
+}
+
+gcc test.c -o test -fPIC -I$JULIA_DIR/include/julia -L$JULIA_DIR/lib
+                         -ljulia $JULIA_DIR/lib/julia/libstdc++.so.6
+                         
+Then if the environment variable JULIA_BINDIR is set to $JULIA_DIR/bin, 
+the output test program can be executed.
+
+Alternatively, look at the embedding.c program in the Julia source tree in the test/embedding/ folder. The file ui/repl.c program is another simple example of how to set jl_options options while linking against libjulia.
+
+The first thing that has to be done before calling any other Julia C function is to initialize Julia. This is done by calling jl_init, which tries to automatically determine Julia's install location. If you need to specify a custom location, or specify which system image to load, use jl_init_with_image instead.
+
+The second statement in the test program evaluates a Julia statement using a call to jl_eval_string.
+
+Before the program terminates, it is strongly recommended to call jl_atexit_hook. The above example program calls this before returning from main.
+
+
+https://docs.julialang.org/en/v1/manual/embedding/#On-the-command-line-1
+
+On the command line
+
+A simple use of this script is from the command line. Assuming that julia-config.jl is located in /usr/local/julia/share/julia, it can be invoked on the command line directly and takes any combination of 3 flags:
+
+/usr/local/julia/share/julia/julia-config.jl
+Usage: julia-config [--cflags|--ldflags|--ldlibs]
+If the above example source is saved in the file embed_example.c, then the following command will compile it into a running program on Linux and Windows (MSYS2 environment), or if on OS/X, then substitute clang for gcc.:
+
+/usr/local/julia/share/julia/julia-config.jl --cflags --ldflags --ldlibs | xargs gcc embed_example.c
+
+Use in Makefiles
+
+But in general, embedding projects will be more complicated than the above, and so the following allows general makefile support as well – assuming GNU make because of the use of the shell macro expansions. Additionally, though many times julia-config.jl may be found in the directory /usr/local, this is not necessarily the case, but Julia can be used to locate julia-config.jl too, and the makefile can be used to take advantage of that. The above example is extended to use a Makefile:
+
+JL_SHARE = $(shell julia -e 'print(joinpath(Sys.BINDIR, Base.DATAROOTDIR, "julia"))')
+CFLAGS   += $(shell $(JL_SHARE)/julia-config.jl --cflags)
+CXXFLAGS += $(shell $(JL_SHARE)/julia-config.jl --cflags)
+LDFLAGS  += $(shell $(JL_SHARE)/julia-config.jl --ldflags)
+LDLIBS   += $(shell $(JL_SHARE)/julia-config.jl --ldlibs)
+
+all: embed_example
+
+Now the build command is simply make.
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The Julia API
+
+Julia is written in Julia, but not all of it. For speed and (sometimes) of a necessity some of 
+the implementation is coded in C and also in Lisp/Scheme which also Julia to have run-
+time macro evaluation as we will see in next section.
+The boot.jl (in base) comments out many of the types and functions which fall into this 
+class and will use ccall to get them from the API. Note that the ccall() has alternate form 
+when referencing these using a provide a symbol not a tuple.
+Calling API from C
+
+It is possible to access Julia from other languages by making calls to th Julia API which 
+is provided by the shared library libjulia. This is created when Julia is built from source 
+and will be located in a directory such as $JULIA_HOME/usr/lib/julia on Linux/OSX. On 
+Windows, it is a DLL and is in the same directory (bin) as the Julia executable.
+
+The library must be included in any linkage and also locatable at runtime. Under Linux 
+(say), this means using ld.config or adding the library to the LD_LIBRARY_PATH
+Here is an example to print the Julia constant PI: pi.c
+
+
+#include <julia.h>
+JULIA_DEFINE_FAST_TLS()
+
+#define LIBEXEC "/Applications/Julia-1.0.app/Contents/Resources/julia/lib"
+int main() {
+    jl_init();
+    jl_eval_string(“println(pi)”);
+    jl_atexit_hook(0)
+}
+It is necessary to include C-definitions in julia.h and also the program needs to know 
+where the Julia system image (sys.ji) is located which I’ve defined as LIBEXEC.
+We build a veriosn of Julia from source on a Centos 6.5 Linux by using the following 
+commands
+export JH=/home/malcolm/julia
+export LD_LIBRARY_PATH=$JH/usr/lib
+gcc -o pi -I$JH/src -I$JH/src/support 
+              -I$JH/usr/include -L$JH/usr/lib -ljulia pi.c
+
+./pi ; # =>  π = 3.1425926535897 … 
+
+If we wish to called Julia functions and pass C-variables we need convert these to the 
+Julia type. This is termed as boxing and the generic jl_value_t  is used with the 
+appropriate box function for the C-type to be passed.
+Here is a program which uses the Julia power operator (^) to compute the values of the 
+square of PI (recall that ^ is a function in Julia).
+
+#include <stdio.h>
+#include <math.h>
+#include <julia.h>
+#define LIBEXEC "/home/malcolm/julia/usr/lib"
+int main() {
+  jl_init(LIBEXEC);
+  JL_SET_STACK_BASE;
+  jl_function_t  *powf = jl_get_function(jl_base_module, “^”);
+  jl_value_t *arg1 = jl_box_float64(M_PI);
+  jl_value_t *arg2 = jl_box_float64(2.0);
+  jl_value_t *rtv  = jl_call2(powf,arg1,arg2);
+  JL_GC_PUSH1(&rtv);
+  if (jl_is_float64(rtv)) {
+    double e_pi = jl_unbox_float64(rtv);
+    printf(“pi (squared) is %f\n”, e_pi);
+  }
+  else {
+    printf(“Oops, an error occurred!\n”);
+  }
+  JL_GC_POP();
+  return 0;
+}
+
+Building and executing gives:   pi (squared) is 9.869604
+Notice the following points when calling the Julia API:
+
+1.	We needed stdio.h since doing some C-based IO (which we did not previously)
+2.	Also math.h  was included, just to pick up a value for PI
+3.	Using jl_box_float64 to switch the C value to a Julia one float.
+4.	jl_value_t is a C-structure which contains the Julia type and a pointer to the data 
+value, see julia_internals.h for its definition
+5.	^ is a function in base and has 2 arguments so call jl_call2 to apply the function to the 
+arguments
+6.	We needed to check the return is a float64 (might be an error)
+7.	If all was OK, the return value was unboxed (to a C-value) value and printed.
+
+Julia is responsible for its own garbage collection, which is cleaning up any allocated 
+memory when variables are defined or go out of scope. This can be triggered by the 
+programmer using the gc() function but normally this is not advisable.
+When calling from C it is not a good idea to assume that any memory allocated will be 
+freed so the purpose of JL_GC_PUSH1 and JL_GC_POP C-macros are  to indicate that the 
+return value from the Julia call needs to be destroyed before the program exits. 

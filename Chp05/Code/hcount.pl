@@ -1,0 +1,30 @@
+#! /usr/local/ActivePerl-5.20/bin/perl
+
+use strict; 
+use warnings;
+
+my %hcount;
+
+open my $fh, '<', $ARGV[0] or die "$!\n";
+ 
+while (my $line = <$fh>) {
+    my @data = split /\s+/, $line;
+    my $host = $data[0];
+    $hcount{$host} += 1;
+}
+
+my $limit = 10;
+foreach my $key (sort hashDescVal (keys(%hcount))) {
+   print "$hcount{$key} \t $key\n";
+   last if --$limit <= 0;
+}
+
+my $nkeys = keys %hcount;
+print("\nNumber of unique URLS in the log: $nkeys\n\n");
+
+close $fh;
+exit;
+
+sub hashDescVal {
+   $hcount{$b} <=> $hcount{$a};
+}

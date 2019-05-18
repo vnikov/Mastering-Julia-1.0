@@ -1,4 +1,21 @@
 
+# Packages used in this chapter
+# To check for installed packages in V1.0 we now need to use the PKG API
+
+using Pkg
+ipks = Pkg.installed()
+pkgs = ["BenchmarkTools","Match","PyPlot","StaticArrays"]
+for p in pkgs
+    !haskey(ipks,p) && Pkg.add(p)
+end
+
+# We can define these here as as required
+using BenchmarkTools, Match, PyPlot, StaticArrays
+
+# We need these as some functions have moved from Base to Stdlib
+#
+using Printf, LinearAlgebra
+
 function hailstone(n)
    k = 1
    a = [n]
@@ -248,164 +265,16 @@ y2 = Skiff(postal,"Dufour 44", 13.47)
 
 @assert y1.length_m < y2.length_m
 
-# A very simple module
-
-module Recips
-export Recip
-import Base.inv
-struct Recip <: Number
-  x::Float64
-  Recip(x) = (x == 0.0) ? throw("Overflow in Recips") : 1.0/x
-end
-inv(a::Recip) = 1.0/a
-end
-
-using Main.Recips
-a = Recip(2.3)
-
-inv(a)
-
-b = Recip(2.3) + Recip(4.5)
-
-c = Recip(2.3)^3
-
-aa = [Recip(rand()) for i = 1:25];
-bb = reshape(aa,5,5)
-
-z = 2.0 + 3.0im;
-Recip(z)^0.5
-
-cubrt(x) = x^(1.0/3.0)
-zz = map(cubrt,[z,Recip(z)])
-
-@assert zz[1] == inv(zz[2])     # Is this true?
-
-[This is for C4]
-
-julia> @code_lowered Recip(2.0)
-CodeInfo(
-6 1 ─ %1 = x == 0.0                                                                       │
-  └──      goto #3 if not %1                                                              │
-  2 ─ %3 = (Main.Recips.throw)("Overflow in Recips")                                      │
-  └──      return %3                                                                      │
-  3 ─ %5 = 1.0 / x                                                                        │
-  └──      return %5                                                                      │
-)
-
-julia> @code_typed Recip(2.0)
-CodeInfo(
-6 1 ─ %1 = (Base.eq_float)(x, 0.0)::Bool                                                   │╻ ==
-  └──      goto #3 if not %1                                                               │ 
-  2 ─      (Main.Recips.throw)("Overflow in Recips")::Union{}                              │ 
-  └──      $(Expr(:unreachable))::Union{}                                                  │ 
-  3 ┄ %5 = (Base.div_float)(1.0, x)::Float64                                               │╻ /
-  └──      return %5                                                                       │ 
-  4 ─      goto #3                                                                         │ 
-) => Float64
-
-julia> @code_typed Recip(2.0 + 3.0im)
-CodeInfo(
-6 1 ─ %1  = (Base.getfield)(x, :im)::Float64                                               │╻╷╷╷ ==
-  │   %2  = (Base.eq_float)(%1, 0.0)::Bool                                                 ││╻    isreal
-  └──       goto #3 if not %2                                                              ││   
-  2 ─ %4  = (Base.getfield)(x, :re)::Float64                                               │││╻    getproperty
-  │   %5  = (Base.eq_float)(%4, 0.0)::Bool                                                 ││╻    ==
-  └──       goto #4                                                                        ││   
-  3 ─       goto #4                                                                        ││   
-  4 ┄ %8  = φ (#2 => %5, #3 => false)::Bool                                                │    
-  └──       goto #6 if not %8                                                              │    
-  5 ─       (Main.Recips.throw)("Overflow in Recips")::Union{}                             │    
-  └──       $(Expr(:unreachable))::Union{}                                                 │    
-  6 ┄ %12 = (Base.getfield)(x, :re)::Float64                                               ││╻╷╷  Type
-  │   %13 = (Base.getfield)(x, :im)::Float64                                               │││╻    imag
-  │   %14 = %new(Complex{Float64}, %12, %13)::Complex{Float64}                             │││╻    Type
-  │   %15 = invoke Base.inv(%14::Complex{Float64})::Complex{Float64}                       ││   
-  │   %16 = (Base.getfield)(%15, :re)::Float64                                             │││╻╷   real
-  │   %17 = (Base.mul_float)(1.0, %16)::Float64                                            │││╻    *
-  │   %18 = (Base.getfield)(%15, :im)::Float64                                             ││││╻    getproperty
-  │   %19 = (Base.mul_float)(1.0, %18)::Float64                                            │││╻    *
-  │   %20 = %new(Complex{Float64}, %17, %19)::Complex{Float64}                             ││││╻    Type
-  └──       return %20                                                                     │    
-  7 ─       goto #6      
-
-
-# Invite to look at @code_llvm and @code_native
-
-julia> @code_llvm Recip(2.0)
-
-; Function Type
-; Location: REPL[38]:6
-define double @julia_Type_36630(%jl_value_t addrspace(10)*, double) {
-top:
-; Function ==; {
-; Location: float.jl:448
-  %2 = fcmp une double %1, 0.000000e+00
-;}
-  br i1 %2, label %L5, label %L3
-
-L3:                                               ; preds = %top
-  call void @jl_throw(%jl_value_t addrspace(12)* addrspacecast (%jl_value_t* inttoptr (i64 4761599520 to %jl_value_t*) to %jl_value_t addrspace(12)*))
-  unreachable
-
-L5:                                               ; preds = %top
-; Function /; {
-; Location: float.jl:401
-  %3 = fdiv double 1.000000e+00, %1
-;}
-  ret double %3
-}
-
-julia> @code_native Recip(2.0)
-	.section	__TEXT,__text,regular,pure_instructions
-; Function Type {
-; Location: REPL[38]:6
-; Function ==; {
-; Location: REPL[38]:6
-	pushl	%eax
-	vxorps	%xmm1, %xmm1, %xmm1
-;}
-	vucomisd	%xmm1, %xmm0
-	jne	L13
-	jnp	L33
-L13:
-	decl	%eax
-	movl	$688715144, %eax        ## imm = 0x290CF588
-	addl	%eax, (%eax)
-	addb	%al, (%eax)
-; Location: REPL[38]:6
-; Function /; {
-; Location: float.jl:401
-	vmovsd	(%eax), %xmm1           ## xmm1 = mem[0],zero
-	vdivsd	%xmm0, %xmm1, %xmm0
-;}
-	popl	%eax
-	retl
-L33:
-	decl	%eax
-	movl	$262788144, %eax        ## imm = 0xFA9D430
-	addl	%eax, (%eax)
-	addb	%al, (%eax)
-	decl	%eax
-	movl	$466632224, %edi        ## imm = 0x1BD03E20
-	addl	%eax, (%eax)
-	addb	%al, (%eax)
-	calll	*%eax
-	nopw	(%eax,%eax)
-;}
-
-
-
-
 # This module uses Float64 components but could use a parameterised type {T}
 #
 module V3D
 
 # import Base.+, Base.*, Base./, Base.==, Base.<, Base.>
 #
-import Base: +, *, /, ==, <, >
+import Base: +, *, /, ==, <, >, zero, one
 import LinearAlgebra: norm, dot
 
-export Vec3, norm, dist
+export Vec3, norm, dist, zero, one
 
 struct Vec3
     x::Float64
@@ -422,6 +291,9 @@ end
 
 dot(a::Vec3, b::Vec3) = a.x*b.x + a.y*b.y + a.z*b.z;
 norm(a::Vec3) = sqrt(dot(a,a));
+
+zero(a::Vec3) = Vec3(0.0,0.0,0.0);
+one(a::Vec3)  = Vec3(1.0,1.0,1.0);
 
 (<)(a::Vec3, b::Vec3) = norm(a) < norm(b) ? true : false;
 (>)(a::Vec3, b::Vec3) = norm(a) > norm(b) ? true : false;
@@ -443,12 +315,15 @@ vs = reshape(vv,1000,1000)
 using LinearAlgebra
 
 dv = map(v -> norm(v), vs)
-dw = dv'
-ee = eigen(dw)
+eigvals(dv)
+
+eigvecs(dv)
 
 k = 0
 for i in 1:length(vv)
-  if norm(vv[i]) < 1.0 k +=1 end
+  if norm(vv[i]) < 1.0 
+    global k +=1 
+  end
 end
 @printf "Estimate of PI is %9.5f\n" 6.0*k/length(vv)
 

@@ -1,0 +1,99 @@
+
+http://www.math.harvard.edu/computing/perl/oneliners.txt
+http://www.socher.org/index.php/Main/PerlScriptsAndOneLiners#ntoc13
+
+
+Perl One-Liners
+
+[Stuff on this]
+
+julia> c3 = `perl -e 'print reverse <>'`;
+
+julia> run(`cat jabberwocky.txt` |> c3 |> `tee jabberwocky.rev` |> `head -4`)
+And the mome raths outgrabe
+All mimsy were the borogoves,
+Did gyre and gimble in the wabe:
+'Twas brillig, and the slithy toves
+
+julia> run(`find . -name \*.rev`);
+./jabberwocky.rev
+
+
+
+fl = "hunting-the-snark";
+c1 = `perl -pne 'tr/[A-Z]/[a-z]/' $(fl)`;
+c2 = `perl -ne 'print join("\n", split(/ /,$_));print("\n")'`;
+
+run(c1 |> c2 |> `sort` |> `uniq -c` |> `sort -rn` |> `head -10`)
+ 889 
+ 299 the
+ 153 and
+ 123 a
+ 105 to
+  91 it
+  82 with
+  76 of
+  76 in
+  75 he
+
+
+  
+run(c1 |> c2 |> `sort` |> `uniq -c` |> `sort -rn` |> `grep bellman`)
+  25 bellman
+   4 bellman,
+   1 bellman's
+
+
+——————————————————————————————————————————————
+
+
+
+perl -00 -e 'print reverse <>' jabberwocky.txt
+cat jabberwocky.txt | perl  -e 'print reverse <>' 
+
+function munge(fl)
+  c1 = `perl -pne 'tr/[A-Z]/[a-z]/' $(fl)`;
+  c2 = `perl -ne 'print join("\n", split(/ /,$_));print("\n")'`
+  readall(c1 |> c2 |> `sort` |> `uniq -c` |> `sort -rn` )
+end
+
+
+——————————————————————————————————————————————
+
+
+run(`perl -e 'print scalar reverse <>' jabberwocky.txt`)
+
+ebargtuo shtar emom eht dnA
+,sevogorob eht erew ysmim llA
+:ebaw eht ni elbmig dna eryg diD
+sevot yhtils eht dna ,gillirb sawT'
+
+.yoj sih ni deltrohc eH
+'!yallaC !hoollaC !yad suojbarf hO
+!yob hsimaeb ym ,smra ym ot emoC
+?kcowrebbaJ eht nials uoht tsah dnA'
+
+.kcab gnihpmulag tnew eH
+daeh sti htiw dna ,daed ti tfel eH
+!kcans-rekcins tnew edalb laprov ehT
+hguorht dna hguorht dnA !owt enO !owt enO
+
+!emac ti sa delbrub dnA
+,doow yeglut eht hguorht gnilffihw emaC
+,emalf fo seye htiw ,kcowrebbaJ ehT
+,doots eh thguoht hsiffu ni sa ,dnA
+
+.thguoht ni elihw a doots dnA
+,eert mutmuT eht yb eh detser oS
+-- thguos eh eof emoxnam eht emit gnoL
+:dnah ni drows laprov sih koot eH
+
+'!hctansrednaB suoimurf ehT
+nuhs dna ,drib bujbuJ eht eraweB
+!hctac taht swalc eht ,etib taht swaj ehT
+!nos ym ,kcowrebbaJ eht eraweB'
+
+.ebargtuo shtar emom eht dnA
+,sevogorob eht erew ysmim llA
+:ebaw eht ni elbmig dna eryg diD
+sevot yhtils eht dna ,gillirb sawT'
