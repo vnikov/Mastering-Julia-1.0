@@ -1,0 +1,81 @@
+using Cairo
+c = CairoRGBSurface(256,256);
+cr = CairoContext(c);
+save(cr);
+
+set_source_rgb(cr,0.8,0.8,0.8);
+rectangle(cr,0.0,0.0,256.0,256.0); # background
+fill(cr);
+restore(cr);
+save(cr);
+
+arc(cr, 128.0, 128.0, 76.8, 0, 2*pi);
+clip(cr);
+new_path(cr);
+
+image = read_from_png ("images/towerbridge.png");
+w = image.width;
+h = image.height;
+scale(cr, 256.0/w, 256.0/h);
+set_source_surface(cr, image, 0, 0);
+
+paint(cr);
+write_to_png(c,"images/towerbridge-cropped.png");
+
+
+:circle, :rect, :star5, :diamond, :hexagon, :cross, :xcross, :utriangle, :dtriangle, 
+:rtriangle, :ltriangle, :pentagon, :heptagon, :octagon, :star4, :star6, :star7, :star8
+
+
+mutable struct MyType end
+
+@recipe function f(::MyType, n::Integer = 10; add_marker = false)
+    linecolor   --> :blue
+    seriestype  :=  :path
+    markershape --> (add_marker ? :circle : :none)
+    delete!(plotattributes, :add_marker)
+    rand(n)
+end
+    
+    
+    
+There are a few important things to know, after which recipes boil down to updating an attribute dictionary and returning input data:
+
+A recipe signature f(args...; kw...) is converted into a definition of apply_recipe(plotattributes::KW, args...) where:
+
+- `plotattributes` is an attribute dictionary of type `typealias KW Dict{Symbol,Any}`
+- Your `args` must be distinct enough that dispatch will call your definition (and without masking an existing definition).  Using a custom data type will ensure proper dispatch.
+
+- The function `f` is unused/meaningless... call it whatever you want.
+
+The special operator --> turns linecolor --> :blue into get!(plotattributes, :linecolor, :blue), setting the attribute only when it doesn't already exist. (Tip: Wrap the right hand side in parentheses for complex expressions.)
+
+The special operator := turns seriestype := :path into plotattributes[:seriestype] = :path, forcing that attribute value. (Tip: Wrap the right hand side in parentheses for complex expressions.)
+
+The return value of the recipe is the args of a RecipeData object, which also has a reference to the attribute dictionary.
+
+A recipe returns a Vector{RecipeData}. We'll see how to add to this list later with the @series macro.
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Raster Graphics
+
+
+Most of the types of displays we have been considering  are defined in terms of points, curves, and shapes such as circles,rectangles, and polygons.
+
+Working with images and colormaps  at the pixel levelis often referred to as raster graphics.
+
+Since low-level packages eventually translate vector plots to rasters, these packages are capable of working with images directly.
+
+So far in this book we have been working with simple netbpm format images, but in practice we will wish to operate with the more common formats such as PNG, GIF,and JPEGs.
+
+So in this final section, we'll turn our attention to a brief overview of some of the ways you can manipulate images in Julia
+
+
+
+
+
+
+

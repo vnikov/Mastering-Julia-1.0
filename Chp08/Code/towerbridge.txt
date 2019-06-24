@@ -1,0 +1,45 @@
+img = open("TowerBridge.pgm");
+magic = chomp(readline(img));
+params = readline(img);
+(wd, ht) = int(split(chomp(params)));
+level = chomp(readline(img));
+
+n = wd*ht;
+data = Array(Uint8, wd, ht);
+data = readbytes(img, n);
+close(img)
+
+out = open("TowerBridge.dat","w");
+write(out, data);
+close(out);
+
+speck = uint8(32*rand(wd*ht));
+
+for i = 1:wd*ht
+   x = int(data[i] + speck[i] - 16)
+   speck[i] = uint8((x < 0) ? 0 : ((x > 255) ? 255 : x))
+end
+
+out = open("TowerBridgeSpc.pgm","w");
+println(out,magic);
+println(out,params);
+println(out,level);
+write(out,speck);
+close(out);
+
+
+data = reshape(data, wd, ht);
+inv = Array(Complex, wd, ht);
+
+for i = 1:wd
+   inv[i,:] = fft(data(i,:)
+end
+inv = transpose(inv)
+
+for i = 1:ht
+   inv[i,:] = fft(data[i,:])
+end
+inv = transpose(inv);
+
+
+

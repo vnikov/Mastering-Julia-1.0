@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.2"
+     width="100mm" height="86.6mm" viewBox="0 0 100 86.6"
+     stroke="none"
+     fill="#000000"
+     stroke-width="0.3"
+     font-size="3.88"
+>
+<defs>
+  <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
+  </marker>
+</defs>
+<g stroke="#000000" fill="#000000" fill-opacity="0.000" stroke-width="0.2" id="img-d4dcfcd5-1">
+  <g transform="translate(75,72.17)">
+    <path d="M25,14.43 L -25 14.43 0 -28.87 z" class="primitive"/>
+  </g>
+  <g transform="translate(25,72.17)">
+    <path d="M25,14.43 L -25 14.43 0 -28.87 z" class="primitive"/>
+  </g>
+  <g transform="translate(50,28.87)">
+    <path d="M25,14.43 L -25 14.43 0 -28.87 z" class="primitive"/>
+  </g>
+</g>
+</svg>
