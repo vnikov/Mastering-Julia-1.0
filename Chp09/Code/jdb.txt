@@ -1,0 +1,107 @@
+
+https://www.youtube.com/watch?v=pv5zfIs2lyU
+
+
+https://github.com/JuliaComputing/JuliaBoxTutorials/blob/master
+/introductory-tutorials/broader-topics-and-ecosystem/intro-to-juliadb
+/2.5.%20NDSparse%20Usage.ipynb
+
+
+
+JuliaDB is a package for working with persistent data sets which can:
+
+* Load multi-dimensional datasets quickly and incrementally.
+* Index the data and perform filter, aggregate, sort and join operations.
+* Save results and load them efficiently later.
+* Readily use Julia's built-in parallelism to fully utilize any machine or cluster.
+
+[ JuliaDB provides distributed table and array data structures with functions to load data from CSV files and can also work with queries from backend databases ]
+
+JuliaDB ties together several existing packages including Dagger.jl and IndexedTables.jl. 
+
+It can operate on a large group of CSV files and it will build and save an index of the contents of those files; optionally it will “ingest” the data, which converts it to a more efficient mmap-able file format.
+
+It is then possible open and operate on a dataset and JuliaDB will handle loading and storing only the necessary blocks from and to disk, making it possible to handle both dense and sparse data of any size and dimension. Because of adhering to the DataStreams protocols it is also possible to work on queries from backend databases.  
+
+Additionally it works with Julia’s distributed parallelism and also supports out-of-core computation (via Dagger).
+
+
+Extensive tutorial at http://juliadb.org/latest/tutorial/
+
+This is a port of a well known tutorial on flight dataset and is available as a Jupyter notebook; it provided which the files for this chapter.
+
+
+Files is around 18Mb with 230K lines of data.
+
+url = "https://raw.githubusercontent.com/piever/JuliaDBTutorial/master/hflights.csv" download(url)
+
+using JuliaDB
+flights = loadtable("hflights.csv")
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+conn = MySQL.connect("localhost", "root", "LQaLxxy6",db="Chinook", 
+            unix_socket="/Applications/MAMP/tmp/mysql/mysql.sock");
+            
+sql = "select a.FirstName,a.LastName, sum(b.Total) as 'Total spent'";
+sql *= " from Customer a";
+sql *= " join Invoice b on a.CustomerId = b.CustomerId";
+sql *= " group by a.FirstName, a.LastName";
+
+MySQL.query(conn,sql) |> table
+
+
+https://github.com/LucasMcL/15-sql_queries_02-chinook/blob/master/chinook-queries.sql
+
+sqle = """select e.FirstName, e.LastName, count(i.invoiceid) as 'Total Number of Sales'
+       from employee as e
+        join customer as c on e.employeeid = c.supportrepid
+        join invoice as i on i.customerid = c.customerid
+       group by e.employeeid"""
+       
+dte = DataFrame(MySQL.query(conn,sqle))
+3×3 DataFrame
+│ Row │ FirstName │ LastName │ Total Number of Sales │
+│     │ String    │ String   │ Int64                 │
+├─────┼───────────┼──────────┼───────────────────────┤
+│ 1   │ Jane      │ Peacock  │ 146                   │
+│ 2   │ Margaret  │ Park     │ 140                   │
+│ 3   │ Steve     │ Johnson  │ 126                   │
+
+
+
+sqlx = """
+select t.name as 'track', t.composer, t.milliseconds, t.bytes, t.unitprice, 
+    a.title as 'album', g.name as 'genre', m.name as 'media type' 
+    from track as t
+	join album as a on a.albumid = t.albumid
+    join genre as g on g.genreid = t.genreid
+    join mediatype as m on m.mediatypeid = t.mediatypeid""";
+    
+Table with 3503 rows, 8 columns:
+Columns:
+#  colname       type
+───────────────────────────────────────
+1  track         String
+2  composer      Union{Missing, String}
+3  milliseconds  Int32
+4  bytes         Union{Missing, Int32}
+5  unitprice     Dec64
+6  album         String
+7  genre         Union{Missing, String}
+8  media type    Union{Missing, String}
+
+select(dtx, :track)
+3503-element Array{String,1}:
+ "For Those About To Rock (We Salute You)"                                       
+ "Put The Finger On You"                                                         
+ "Let's Get It Up"                                                               
+ "Inject The Venom"  
+ . . . . . . . . . 
+ 
+ 
+ 
+ 
+               
+                  
